@@ -77,6 +77,14 @@ architecture RTL of axi_lite is
 	signal wstrb : std_logic_vector
 		((C_S_AXI_DATA_WIDTH/8)-1 downto 0);
 
+	-- Some useful indicators
+	signal valid_read_request	: std_logic;
+	signal read_response_stall	: std_logic;
+
+	signal valid_write_address	: std_logic;
+	signal valid_write_data		: std_logic;
+	signal write_response_stall	: std_logic;
+
 begin
 	s_axi_awready	<= axi_awready;
 	s_axi_wready	<= axi_wready;
@@ -87,18 +95,18 @@ begin
 	s_axi_rresp	<= "00";	-- OKAY response
 	s_axi_rvalid	<= axi_rvalid;
 
+	valid_read_request   <= s_axi_arvalid or not axi_arready;
+	read_response_stall  <= axi_rvalid and not s_axi_rready;
+
+	valid_write_address  <= s_axi_awvalid or not axi_awready;
+	valid_write_data     <= s_axi_wvalid or not axi_wready;
+	write_response_stall <= axi_bvalid and not s_axi_bready;
+
 	---- Read Processing ----
 
-	read_proc : process (s_axi_aclk, s_axi_arvalid, axi_arready,
-			axi_rvalid, s_axi_rready)
-		variable valid_read_request  : std_logic;
-		variable read_response_stall : std_logic;
+	process (s_axi_aclk) is
 	begin
-		valid_read_request  := s_axi_arvalid or not axi_arready;
-		read_response_stall := axi_rvalid and not s_axi_rready;
-
 		if rising_edge(s_axi_aclk) then
-
 			-- The read response channel valid signal
 			if s_axi_areset_n = '0' then
 				axi_rvalid <= '0';
@@ -109,18 +117,33 @@ begin
 			else
 				axi_rvalid <= '0';
 			end if;
+		end if;
+	end process;
 
+	process (s_axi_aclk) is
+	begin
+		if rising_edge(s_axi_aclk) then
 			-- Buffer the address
 			if axi_arready = '1' then
 				pre_raddr <= s_axi_araddr;
 			end if;
+		end if;
+	end process;
 
+	process (s_axi_aclk) is
+	begin
+		if rising_edge(s_axi_aclk) then
 			-- Read the data
 			if read_response_stall = '0'
 			and valid_read_request = '1' then
 				axi_rdata <= slv_mem(to_integer(unsigned(rd_addr(AW+ADDR_LSB-1 downto ADDR_LSB))));
 			end if;
+		end if;
+	end process;
 
+	process (s_axi_aclk) is
+	begin
+		if rising_edge(s_axi_aclk) then
 			-- The read address channel ready signal
 			if s_axi_areset_n = '0' then
 				axi_arready <= '1';
@@ -132,29 +155,13 @@ begin
 		end if;
 	end process;
 	
-	process (all) is
-	begin
-		if axi_arready = '0' then
-			rd_addr <= pre_raddr;
-		else
-			rd_addr <= s_axi_araddr;
-		end if;
-	end process;
+	rd_addr <= pre_raddr when axi_arready = '0' else s_axi_araddr;
 
 	---- Write Processing ----
 
-	write_proc : process (s_axi_aclk, s_axi_awvalid, axi_awready,
-			s_axi_wvalid, axi_wready, axi_bvalid, s_axi_bready)
-		variable valid_write_address	: std_logic;
-		variable valid_write_data	: std_logic;
-		variable write_response_stall	: std_logic;
+	process (s_axi_aclk) is
 	begin
-		valid_write_address  := s_axi_awvalid or not axi_awready;
-		valid_write_data     := s_axi_wvalid or not axi_wready;
-		write_response_stall := axi_bvalid and not s_axi_bready;
-
 		if rising_edge(s_axi_aclk) then
-
 			-- The write address channel ready signal
 			if s_axi_areset_n = '0' then
 				axi_awready <= '1';
@@ -165,7 +172,12 @@ begin
 			else
 				axi_awready <= axi_awready and not s_axi_awvalid; 
 			end if;
+		end if;
+	end process;
 
+	process (s_axi_aclk) is
+	begin
+		if rising_edge(s_axi_aclk) then
 			-- The write data channel ready signal
 			if s_axi_areset_n = '0' then
 				axi_wready <= '1';
@@ -176,18 +188,33 @@ begin
 			else
 				axi_wready <= axi_wready and not s_axi_wvalid;
 			end if;
+		end if;
+	end process;
 
+	process (s_axi_aclk) is
+	begin
+		if rising_edge(s_axi_aclk) then
 			-- Buffer the address
 			if axi_awready = '1' then
 				pre_waddr <= s_axi_awaddr;
 			end if;
+		end if;
+	end process;
 
+	process (s_axi_aclk) is
+	begin
+		if rising_edge(s_axi_aclk) then
 			-- Buffer the data
 			if axi_wready = '1' then
 				pre_wdata <= s_axi_wdata;
 				pre_wstrb <= s_axi_wstrb;
 			end if;
+		end if;
+	end process;
 
+	process (s_axi_aclk) is
+	begin
+		if rising_edge(s_axi_aclk) then
 			-- Actually write the data
 			if write_response_stall = '0'
 			and valid_write_address = '1'
@@ -209,7 +236,12 @@ begin
 						(31 downto 24) <= wdata(31 downto 24);
 				end if;
 			end if;
+		end if;
+	end process;
 
+	process (s_axi_aclk) is
+	begin
+		if rising_edge(s_axi_aclk) then
 			-- The write response channel valid signal
 			if s_axi_areset_n = '0' then
 				axi_bvalid <= '0';
@@ -222,21 +254,11 @@ begin
 		end if; 
 	end process;
 
-	process (all) is
-	begin
-		if axi_awready = '0' then
-			waddr <= pre_waddr;
-		else
-			waddr <= s_axi_awaddr;
-		end if;
+	-- Read write address from buffer
+	waddr <= pre_waddr when axi_awready = '0' else s_axi_awaddr;
 
-		if axi_wready = '0' then
-			wstrb <= pre_wstrb;
-			wdata <= pre_wdata;
-		else
-			wstrb <= s_axi_wstrb;
-			wdata <= s_axi_wdata;
-		end if;
-	end process;
+	-- Read write data from buffer
+	wstrb <= pre_wstrb when axi_wready = '0' else s_axi_wstrb;
+	wdata <= pre_wdata when axi_wready = '0' else s_axi_wdata;
 
 end architecture RTL;
