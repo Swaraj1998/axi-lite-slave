@@ -1,0 +1,17 @@
+# compile verilog/system verilog design source files
+sv work --include ".gen/sources_1/bd/design_1/ipshared/ec67/hdl" --include ".gen/sources_1/bd/design_1/ipshared/ec67/hdl" --include ".gen/sources_1/bd/design_1/ipshared/34f8/hdl" \
+".ip_user_files/bd/design_1/ip/design_1_axi_vip_0_0_25/sim/design_1_axi_vip_0_0_pkg.sv" \
+".ip_user_files/bd/design_1/ip/design_1_axi_vip_0_0_25/sim/design_1_axi_vip_0_0.sv" \
+
+verilog work --include ".gen/sources_1/bd/design_1/ipshared/ec67/hdl" --include ".gen/sources_1/bd/design_1/ipshared/ec67/hdl" --include ".gen/sources_1/bd/design_1/ipshared/34f8/hdl" \
+".ip_user_files/bd/design_1/sim/design_1.v" \
+".gen/sources_1/bd/design_1/hdl/design_1_wrapper.v" \
+
+sv work --include ".gen/sources_1/bd/design_1/ipshared/ec67/hdl" --include ".gen/sources_1/bd/design_1/ipshared/ec67/hdl" --include ".gen/sources_1/bd/design_1/ipshared/34f8/hdl" \
+"testbench.sv" \
+
+# compile glbl module
+#verilog work "glbl.v"
+
+# Do not sort compile order
+nosort

@@ -4,7 +4,7 @@ set_property default_lib work [current_project]
 
 create_bd_design "design_1"
 
-set_property  ip_repo_paths  /media/hdd1/Xilinx/Projects/ip_repo [current_project]
+set_property ip_repo_paths /media/hdd1/Xilinx/Projects/ip_repo [current_project]
 update_ip_catalog
 
 create_bd_cell -type ip -vlnv user.org:user:axi_lite:1.0 axi_lite_0
@@ -28,9 +28,30 @@ assign_bd_address -target_address_space \
 	/axi_vip_0/Master_AXI [get_bd_addr_segs axi_lite_0/s_axi/reg0] -force
 
 make_wrapper -files [get_files design_1.bd] -top
+generate_target all [get_files design_1.bd]
+
+export_ip_user_files
+set XSIM_SCRIPTS_DIR .ip_user_files/sim_scripts/design_1/xsim 
+
+#exec $XSIM_SCRIPTS_DIR/design_1.sh
+
+# Compile
 
 exec xvlog .gen/sources_1/bd/design_1/hdl/design_1_wrapper.v
-exec xvlog -sv testbench.sv
+exec xvlog -sv testbench.sv -L axi_vip_v1_1_8 -L xilinx_vip \
+	-prj $XSIM_SCRIPTS_DIR/vlog.prj
+exec xvhdl -prj $XSIM_SCRIPTS_DIR/vhdl.prj
+#exec xvlog -sv testbench.sv -L axi_vip_v1_1_8 -L xilinx_vip \
+	-prj testbench_vlog.prj
+#exec xvhdl -prj testbench_vhdl.prj
 
-exec xelab -s sim_test testbench -debug all
-exec xsim sim_test -gui
+# Elaborate
+
+exec xelab --debug typical -L xilinx_vip -L work -L axi_infrastructure_v1_1_0 \
+	-L axi_vip_v1_1_8 -L xilinx_vip -L unisims_ver -L unimacro_ver \
+	-L secureip --snapshot testbench_behav work.design_1 work.glbl
+
+# Simulate
+
+exec xsim testbench_behav -t testbench.tcl -protoinst \
+	"$XSIM_SCRIPTS_DIR/protoinst_files/design_1.protoinst" -gui
