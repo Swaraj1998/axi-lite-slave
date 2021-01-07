@@ -48,6 +48,7 @@ set XSIM_SCRIPTS_DIR .ip_user_files/sim_scripts/design_1/xsim
 exec xvlog .gen/sources_1/bd/design_1/hdl/design_1_wrapper.v
 exec xvlog -L axi_vip_v1_1_8 -L xilinx_vip -prj $XSIM_SCRIPTS_DIR/vlog.prj
 exec xvhdl -prj $XSIM_SCRIPTS_DIR/vhdl.prj
+exec xvlog -L axi_vip_v1_1_8 -L xilinx_vip -sv testbench.sv
 #exec xvlog -L axi_vip_v1_1_8 -L xilinx_vip -prj testbench_vlog.prj
 #exec xvhdl -prj testbench_vhdl.prj
 
